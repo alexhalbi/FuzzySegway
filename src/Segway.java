@@ -170,8 +170,8 @@ public class Segway {
         
     }
 
-    public void setInput(int angularVelocity, int angle){
-        nfl.setInputValue("vel", angularVelocity);
+    public void setInput(int vel, int angle){
+        nfl.setInputValue("vel", vel);
         nfl.setInputValue("angle", angle);
     }
 
@@ -180,32 +180,67 @@ public class Segway {
         return (int) nfl.getOutputValue("speed");
     }
     
-    public int calculateAngle(int velocity){
-    	return 0;
-    }
-    
     public static void main(String[] args) {
+    	Segway segway = new Segway();
       	int angle=calibrate();
-    	
+      	LCD.clear();
+      	float lastTime = System.currentTimeMillis();
+      	int vel = segway.getVelocity();
+      	segway.setInput(vel,angle);
+      	
 		while(!Button.ESCAPE.isDown()){
-			float vel = gyro.getAngularVelocity();
 			
+			float time = lastTime - System.currentTimeMillis();
 			
+			vel = segway.getVelocity();
+			angle +=(int)(time*vel);
+			LCD.drawString("Diff: "+(time*vel),1,4);
+					
+			if(angle > 90){
+				angle = 90;
+			}else if(angle < -90){
+				angle = -90;
+			}
+			segway.setInput(vel,angle);
+	      	int speed = segway.getOutput();
+	      	LCD.drawString("Speed: "+speed, 1, 1);
+	      	LCD.drawString("Vel: "+vel,1,2);
+	     	LCD.drawString("Angle: "+angle,1,3);
+	     
+	     	
+	      	Motor.A.setSpeed(speed);
+	      	Motor.C.setSpeed(speed);
+	      	if(speed > 0 ){
+	      		Motor.A.backward();
+		      	Motor.C.backward();
+	      	} else {
+	      		Motor.A.forward();
+		      	Motor.C.forward();
+	      	}
+			
+			lastTime = System.currentTimeMillis();
+	      	
 		}
+      	
     }
 
 	private static int calibrate() {
-		LCD.drawString("Bitte mit dem Display nach oben hinlegen", 0, 0);
-		LCD.drawString("Dann orangen Knopf drücken",0,2);
-		while(!Button.ENTER.isDown()){
-			
-		}
-		int startValue=-90;
-		
+	
 		LCD.clear();
-		LCD.drawString("Segway bitte austellen und an der Stütze halten.", 0, 0);
+		LCD.drawString("Segway bitte aufstellen und an der Stütze halten.", 0, 0);
 		LCD.drawString("Dann orangen Knopf drücken und Stütze loslassen.",0,2);
+		int startValue = 0;
+		while(!Button.ENTER.isDown()){
 		
-		return angle;
+		}
+		return startValue;
+	}
+	public int getVelocity(){
+		int vel=0;
+		for(int i=0;i<2;i++){
+			vel += (int) gyro.getAngularVelocity();
+		}
+		
+		return vel/3;
 	}
 }
